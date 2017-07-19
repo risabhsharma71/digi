@@ -57,7 +57,7 @@ func createUser(stub shim.ChaincodeStubInterface, args []string) ([]byte, error)
 	}
 
 	var userid = args[0]
-	var userinfo = `{"owns":[],"sharedWithMe":[]}`
+	var userinfo = `{[],{}}`
 
 	err := stub.PutState(userid, []byte(userinfo))
 	if err != nil {
