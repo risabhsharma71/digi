@@ -18,37 +18,37 @@ type User struct {
 	SharedwithMe map[string][]string `json:"sharedwithme"`
 }
 
-type SampleChaincode struct {
+type SimpleChaincode struct {
 }
 
-func (t *SampleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	return nil, nil
+func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 }
 
-func (t *SampleChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	switch function {
 	case "getMydocs":
-		return createUser(stub, args)
+		return t.createUser(stub, args)
 	case "getSharedDocs":
-		return addDocument(stub, args)
+		return t.addDocument(stub, args)
 
 	}
 	return nil, nil
 }
 
-func (t *SampleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 
 	switch function {
 	case "createUser":
-		return createUser(stub, args)
+		return t.createUser(stub, args)
 	case "addDocument":
-		return addDocument(stub, args)
+		return t.addDocument(stub, args)
 	case "shareDocument":
-		return shareDocument(stub, args)
+		return t.shareDocument(stub, args)
 	}
 	return nil, nil
 }
-func createUser(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) createUser(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	//func createUser(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	fmt.Println("Entering CreateLoanApplication")
 
 	if len(args) < 1 {
@@ -70,7 +70,7 @@ func createUser(stub shim.ChaincodeStubInterface, args []string) ([]byte, error)
 }
 
 //2.addDocument()   (#user,#doc)
-func addDocument(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) addDocument(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	fmt.Println("Entering CreateLoanApplication")
 	var user User
 	if len(args) < 2 {
@@ -111,7 +111,7 @@ func addDocument(stub shim.ChaincodeStubInterface, args []string) ([]byte, error
 }
 
 //3. shareDocument()    (#doc,#user, #org)  Invoke
-func shareDocument(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) shareDocument(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	fmt.Println("Entering CreateLoanApplication")
 	var user User
 	var org User
@@ -177,7 +177,7 @@ func shareDocument(stub shim.ChaincodeStubInterface, args []string) ([]byte, err
 }
 
 //4. getMydocs()    (#user) Query
-func getMydocs(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) getMydocs(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	fmt.Println("Entering GetLoanApplication")
 
 	if len(args) < 1 {
@@ -186,16 +186,16 @@ func getMydocs(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) 
 	}
 
 	var userid = args[0]
-	bytes, err := stub.GetState(userid)
+	idasbytes, err := stub.GetState(userid)
 	if err != nil {
 		fmt.Println("Could not user info", err)
 		return nil, err
 	}
-	return bytes, nil
+	return idasbytes, nil
 }
 
 //getSharedDocs()
-func getSharedDocs(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) getSharedDocs(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	fmt.Println("Entering GetLoanApplication")
 
 	if len(args) < 1 {
@@ -213,11 +213,12 @@ func getSharedDocs(stub shim.ChaincodeStubInterface, args []string) ([]byte, err
 }
 
 func main() {
-	err := shim.Start(new(SampleChaincode))
+	err := shim.Start(new(SimpleChaincode))
+
 	if err != nil {
-		fmt.Println("Could not start SampleChaincode")
+		fmt.Println("Could not start SimpleChaincode")
 	} else {
-		fmt.Println("SampleChaincode successfully started")
+		fmt.Println("SimpleChaincode successfully started")
 	}
 }
 func contains(slice []string, item string) bool {
