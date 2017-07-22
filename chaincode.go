@@ -16,6 +16,7 @@ type User struct {
 	Owns []string `json:"owns"`
 	//SharedwithMe []DocumentInfo `json:"sharedwithme"`
 	SharedwithMe map[string][]string `json:"sharedwithme"`
+	Auditrail    map[string][]string
 }
 
 type SimpleChaincode struct {
@@ -58,7 +59,7 @@ func (t *SimpleChaincode) createUser(stub shim.ChaincodeStubInterface, args []st
 	}
 
 	var userid = args[0]
-	var userinfo = `{"owns":[],"mymap":{}}`
+	var userinfo = `{"owns":[],"mymap":{}, audit:{}}`
 
 	err := stub.PutState(userid, []byte(userinfo))
 	if err != nil {
@@ -156,10 +157,17 @@ func (t *SimpleChaincode) shareDocument(stub shim.ChaincodeStubInterface, args [
 	if org.SharedwithMe == nil {
 		org.SharedwithMe = make(map[string][]string)
 	}
+
+	if user.Auditrail == nil {
+		user.Auditrail = make(map[string][]string)
+	}
 	//adding the document if it doesnt exists already
 	if !contains(org.SharedwithMe[userid], docid) {
 		org.SharedwithMe[userid] = append(org.SharedwithMe[userid], docid)
+		user.Auditrail[orgid] = append(user.Auditrail[orgid], "timestamp") //replace with actual timestamp
+		user.Auditrail[orgid] = append(user.Auditrail[orgid], docid)
 	}
+
 	bytes, err := json.Marshal(&org)
 	if err != nil {
 		fmt.Println("Could not marshal personal info object", err)
