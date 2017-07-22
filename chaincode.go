@@ -28,9 +28,9 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	switch function {
 	case "getMydocs":
-		return t.createUser(stub, args)
+		return t.getMydocs(stub, args)
 	case "getSharedDocs":
-		return t.addDocument(stub, args)
+		return t.getSharedDocs(stub, args)
 
 	}
 	return nil, nil
