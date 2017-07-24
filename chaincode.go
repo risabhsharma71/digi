@@ -47,12 +47,86 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		return t.addDocument(stub, args)
 	case "shareDocument":
 		return t.shareDocument(stub, args)
+	case "revokeAccess":
+		return t.revokeAccess(stub, args)
 	}
 	return nil, nil
 }
+
+//this method can be used to remove for org and revoke for individual
+func (t *SimpleChaincode) revokeAccess(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	if len(args) < 3 {
+		fmt.Println("Expecting a minimum of three arguments Argument")
+		return nil, errors.New("Expected at least one arguments for adding a user")
+	}
+
+	var userhash = args[0]
+	var orghash = args[1]
+	var dochash = args[2]
+
+	var user User
+	var org User
+
+	//checking if the user exists
+	userbytes, err := stub.GetState(userhash)
+	if err != nil {
+		fmt.Println("could not fetch user", err)
+		return nil, err
+	}
+
+	err = json.Unmarshal(userbytes, &user)
+	if err != nil {
+		fmt.Println("Unable to marshal data", err)
+		return nil, err
+	}
+
+	//checking if the user exists
+	orgbytes, orgerr := stub.GetState(orghash)
+	if orgerr != nil {
+		fmt.Println("could not fetch user", orgerr)
+		return nil, err
+	}
+
+	err = json.Unmarshal(orgbytes, &org)
+	if err != nil {
+		fmt.Println("Unable to marshal data", err)
+		return nil, err
+	}
+
+	userDocsArray := org.SharedwithMe[userhash]
+
+	// removes that particular document from the array
+	for i, v := range userDocsArray {
+		if v == dochash {
+			userDocsArray = append(userDocsArray[:i], userDocsArray[i+1:]...)
+			break
+		}
+	}
+
+	//assign that array to the user map key
+	org.SharedwithMe[userhash] = userDocsArray
+
+	bytesvalue, err = json.Marshal(&org)
+	if err != nil {
+		fmt.Println("Could not marshal personal info object", err)
+		return nil, err
+	}
+
+	//write back in blockchain
+	err = stub.PutState(userid, bytesvalue)
+	if err != nil {
+		fmt.Println("Could not save add doc to user", err)
+		return nil, err
+	}
+
+	fmt.Println("Successfully revoked access to the doc")
+	return nil, nil
+
+}
+
 func (t *SimpleChaincode) createUser(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	//func createUser(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	fmt.Println("Entering CreateLoanApplication")
+	fmt.Println("Entering createUser")
 
 	if len(args) < 1 {
 		fmt.Println("Expecting One Argument")
@@ -74,7 +148,7 @@ func (t *SimpleChaincode) createUser(stub shim.ChaincodeStubInterface, args []st
 
 //2.addDocument()   (#user,#doc)
 func (t *SimpleChaincode) addDocument(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	fmt.Println("Entering CreateLoanApplication")
+	fmt.Println("Entering addDocument")
 	var user User
 	if len(args) < 2 {
 		fmt.Println("Expecting two Argument")
@@ -85,7 +159,7 @@ func (t *SimpleChaincode) addDocument(stub shim.ChaincodeStubInterface, args []s
 	var docid = args[1]
 	bytes, err := stub.GetState(userid)
 	if err != nil {
-		//	fmt.Println("Could not fetch loan application with id "+loanApplicationId+" from ledger", err)
+
 		return nil, err
 	}
 
@@ -115,7 +189,7 @@ func (t *SimpleChaincode) addDocument(stub shim.ChaincodeStubInterface, args []s
 
 //3. shareDocument()    (#doc,#user, #org)  Invoke
 func (t *SimpleChaincode) shareDocument(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	fmt.Println("Entering CreateLoanApplication")
+	fmt.Println("Entering shareDocument")
 	var user User
 	var org User
 	var doc DocumentInfo
@@ -190,7 +264,7 @@ func (t *SimpleChaincode) shareDocument(stub shim.ChaincodeStubInterface, args [
 
 //4. getMydocs()    (#user) Query
 func (t *SimpleChaincode) getMydocs(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	fmt.Println("Entering GetLoanApplication")
+	fmt.Println("Entering getMydocs")
 
 	if len(args) < 1 {
 		fmt.Println("Invalid number of arguments")
@@ -208,7 +282,7 @@ func (t *SimpleChaincode) getMydocs(stub shim.ChaincodeStubInterface, args []str
 
 //getSharedDocs()
 func (t *SimpleChaincode) getSharedDocs(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	fmt.Println("Entering GetLoanApplication")
+	fmt.Println("Entering getSharedDocs")
 
 	if len(args) < 1 {
 		fmt.Println("Invalid number of arguments")
