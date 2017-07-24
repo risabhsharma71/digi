@@ -192,8 +192,6 @@ func (t *SimpleChaincode) shareDocument(stub shim.ChaincodeStubInterface, args [
 	fmt.Println("Entering shareDocument")
 	var user User
 	var org User
-	var doc DocumentInfo
-	fmt.Println(doc)
 	if len(args) < 2 {
 		fmt.Println("Expecting three Argument")
 		return nil, errors.New("Expected at least three arguments for sharing  a document")
