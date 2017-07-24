@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
@@ -16,7 +17,7 @@ type User struct {
 	Owns []string `json:"owns"`
 	//SharedwithMe []DocumentInfo `json:"sharedwithme"`
 	SharedwithMe map[string][]string `json:"sharedwithme"`
-	Auditrail    map[string][]string
+	Auditrail    map[string][]string `json:"audittrail"`
 }
 
 type SimpleChaincode struct {
@@ -160,11 +161,13 @@ func (t *SimpleChaincode) shareDocument(stub shim.ChaincodeStubInterface, args [
 
 	if user.Auditrail == nil {
 		user.Auditrail = make(map[string][]string)
+
 	}
 	//adding the document if it doesnt exists already
 	if !contains(org.SharedwithMe[userid], docid) {
+		timestamp := makeTimestamp()
 		org.SharedwithMe[userid] = append(org.SharedwithMe[userid], docid)
-		user.Auditrail[orgid] = append(user.Auditrail[orgid], "timestamp") //replace with actual timestamp
+		user.Auditrail[orgid] = append(user.Auditrail[orgid], timestamp) //replace with actual timestamp
 		user.Auditrail[orgid] = append(user.Auditrail[orgid], docid)
 	}
 
@@ -238,4 +241,10 @@ func contains(slice []string, item string) bool {
 
 	_, ok := set[item]
 	return ok
+}
+func makeTimestamp() string {
+	t := time.Now()
+
+	return t.Format(("2006-01-02T15:04:05.999999-07:00"))
+	//return time.Now().UnixNano() / (int64(time.Millisecond)/int64(time.Nanosecond))
 }
