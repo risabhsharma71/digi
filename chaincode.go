@@ -106,14 +106,14 @@ func (t *SimpleChaincode) revokeAccess(stub shim.ChaincodeStubInterface, args []
 	//assign that array to the user map key
 	org.SharedwithMe[userhash] = userDocsArray
 
-	bytesvalue, err = json.Marshal(&org)
+	bytesvalue, err := json.Marshal(&org)
 	if err != nil {
 		fmt.Println("Could not marshal personal info object", err)
 		return nil, err
 	}
 
 	//write back in blockchain
-	err = stub.PutState(userid, bytesvalue)
+	err = stub.PutState(userhash, bytesvalue)
 	if err != nil {
 		fmt.Println("Could not save add doc to user", err)
 		return nil, err
