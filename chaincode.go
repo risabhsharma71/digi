@@ -54,8 +54,6 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	}
 	return nil, nil
 }
-
-//this method can be used to remove for org and revoke for individual
 func (t *SimpleChaincode) revokeAccess(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	if len(args) < 3 {
 		fmt.Println("Expecting a minimum of three arguments Argument")
@@ -108,14 +106,14 @@ func (t *SimpleChaincode) revokeAccess(stub shim.ChaincodeStubInterface, args []
 	//assign that array to the user map key
 	org.SharedwithMe[userhash] = userDocsArray
 
-	bytesvalue, err = json.Marshal(&org)
+	bytesvalue, err := json.Marshal(&org)
 	if err != nil {
 		fmt.Println("Could not marshal personal info object", err)
 		return nil, err
 	}
 
 	//write back in blockchain
-	err = stub.PutState(userid, bytesvalue)
+	err = stub.PutState(userhash, bytesvalue)
 	if err != nil {
 		fmt.Println("Could not save add doc to user", err)
 		return nil, err
@@ -125,7 +123,6 @@ func (t *SimpleChaincode) revokeAccess(stub shim.ChaincodeStubInterface, args []
 	return nil, nil
 
 }
-
 func (t *SimpleChaincode) createUser(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	//func createUser(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	fmt.Println("Entering createUser")
@@ -136,7 +133,7 @@ func (t *SimpleChaincode) createUser(stub shim.ChaincodeStubInterface, args []st
 	}
 
 	var userid = args[0]
-	var userinfo = `{"owns":[],"mymap":{}, audit:{}}`
+	var userinfo = `{"owns":[],"mymap":{}, "audit":{}}`
 
 	err := stub.PutState(userid, []byte(userinfo))
 	if err != nil {
@@ -158,7 +155,9 @@ func (t *SimpleChaincode) addDocument(stub shim.ChaincodeStubInterface, args []s
 	}
 
 	var userid = args[0]
+	fmt.Println(userid)
 	var docid = args[1]
+	fmt.Println(docid)
 	bytes, err := stub.GetState(userid)
 	if err != nil {
 		return nil, err
@@ -188,8 +187,8 @@ func (t *SimpleChaincode) shareDocument(stub shim.ChaincodeStubInterface, args [
 	fmt.Println("Entering shareDocument")
 	var user User
 	var org User
-	var doc DocumentInfo
-	fmt.Println(doc)
+	//	var doc DocumentInfo
+	//fmt.Println(doc)
 	if len(args) < 2 {
 		fmt.Println("Expecting three Argument")
 		return nil, errors.New("Expected at least three arguments for sharing  a document")
@@ -236,11 +235,12 @@ func (t *SimpleChaincode) shareDocument(stub shim.ChaincodeStubInterface, args [
 	//adding the document if it doesnt exists already
 	if !contains(org.SharedwithMe[userid], docid) {
 		timestamp := makeTimestamp()
+		fmt.Println(timestamp)
 		//---------------Sharing the doc to Organisation-----------------------
 		org.SharedwithMe[userid] = append(org.SharedwithMe[userid], docid)
 
 		//-------------- Adding time stamp to user audit trail array-------------
-		user.Auditrail[orgid] = append(user.Auditrail[orgid], timestamp) //replace with actual timestamp
+		user.Auditrail[orgid] = append(user.Auditrail[orgid], timestamp)
 		user.Auditrail[orgid] = append(user.Auditrail[orgid], docid)
 	}
 
@@ -263,7 +263,7 @@ func (t *SimpleChaincode) shareDocument(stub shim.ChaincodeStubInterface, args [
 
 //4. getMydocs()    (#user) Query
 func (t *SimpleChaincode) getMydocs(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	fmt.Println("Entering getMydocs")
+	fmt.Println("Entering get my docs")
 
 	if len(args) < 1 {
 		fmt.Println("Invalid number of arguments")
