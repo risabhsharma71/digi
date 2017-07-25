@@ -64,10 +64,10 @@ func (t *SimpleChaincode) removeDocument(stub shim.ChaincodeStubInterface, args 
 	var userhash = args[0]
 	var dochash = args[1]
 	var user User
-
-	user, err = readFromBlockchain(userhash)
+	var err error
+	user, err = readFromBlockchain(userhash, stub)
 	if err != nil {
-		return nil, errors.New("failed to read", err)
+		return nil, errors.New("failed to read")
 	}
 
 	for i, v := range user.Owns {
@@ -98,18 +98,11 @@ func (t *SimpleChaincode) revokeAccess(stub shim.ChaincodeStubInterface, args []
 	var orghash = args[1]
 	var dochash = args[2]
 
-	var user User
 	var org User
 
-	//checking if the user exists
-	user, err = readFromBlockchain(userhash)
+	org, err := readFromBlockchain(orghash, stub)
 	if err != nil {
-		return nil, errors.New("failed to read", err)
-	}
-
-	org, err = readFromBlockchain(orghash)
-	if err != nil {
-		return nil, errors.New("failed to read", err)
+		return nil, errors.New("failed to read")
 	}
 
 	userDocsArray := org.SharedwithMe[userhash]
@@ -317,16 +310,14 @@ func makeTimestamp() string {
 }
 
 //------------- reusable methods -------------------
-
-func (t *SimpleChaincode) writeIntoBlockchain(key string, value User, stub shim.ChaincodeStubInterface) ([]byte, error) {
-
+func writeIntoBlockchain(key string, value User, stub shim.ChaincodeStubInterface) ([]byte, error) {
 	bytes, err := json.Marshal(&value)
 	if err != nil {
 		fmt.Println("Could not marshal info object", err)
 		return nil, err
 	}
 
-	err = stub.PutState(userid, bytes)
+	err = stub.PutState(key, bytes)
 	if err != nil {
 		fmt.Println("Could not save sharing info to org", err)
 		return nil, err
@@ -335,18 +326,18 @@ func (t *SimpleChaincode) writeIntoBlockchain(key string, value User, stub shim.
 	return nil, nil
 }
 
-func (t *SimpleChaincode) readFromBlockchain(key string) (User, error) {
+func readFromBlockchain(key string, stub shim.ChaincodeStubInterface) (User, error) {
 	userbytes, err := stub.GetState(key)
+	var user User
 	if err != nil {
 		fmt.Println("could not fetch user", err)
-		return nil, err
+		return user, err
 	}
 
-	var user User
 	err = json.Unmarshal(userbytes, &user)
 	if err != nil {
 		fmt.Println("Unable to marshal data", err)
-		return nil, err
+		return user, err
 	}
 
 	return user, nil
