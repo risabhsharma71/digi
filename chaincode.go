@@ -32,7 +32,7 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 	case "getMydocs":
 		return t.getMydocs(stub, args)
 	case "getSharedDocs":
-		return t.getSharedDocs(stub, args)
+		return t.getMydocs(stub, args)
 
 	}
 	return nil, nil
@@ -49,6 +49,8 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		return t.shareDocument(stub, args)
 	case "revokeAccess":
 		return t.revokeAccess(stub, args)
+	case "removeDocument":
+		return t.removeDocument(stub, args)
 	}
 	return nil, nil
 }
@@ -159,7 +161,6 @@ func (t *SimpleChaincode) addDocument(stub shim.ChaincodeStubInterface, args []s
 	var docid = args[1]
 	bytes, err := stub.GetState(userid)
 	if err != nil {
-
 		return nil, err
 	}
 
@@ -170,13 +171,8 @@ func (t *SimpleChaincode) addDocument(stub shim.ChaincodeStubInterface, args []s
 	}
 
 	user.Owns = append(user.Owns, docid)
-	bytesvalue, err := json.Marshal(&user)
-	if err != nil {
-		fmt.Println("Could not marshal personal info object", err)
-		return nil, err
-	}
 
-	err = stub.PutState(userid, bytesvalue)
+	_, err = writeIntoBlockchain(userid, user, stub)
 	if err != nil {
 		fmt.Println("Could not save add doc to user", err)
 		return nil, err
@@ -240,20 +236,23 @@ func (t *SimpleChaincode) shareDocument(stub shim.ChaincodeStubInterface, args [
 	//adding the document if it doesnt exists already
 	if !contains(org.SharedwithMe[userid], docid) {
 		timestamp := makeTimestamp()
+		//---------------Sharing the doc to Organisation-----------------------
 		org.SharedwithMe[userid] = append(org.SharedwithMe[userid], docid)
+
+		//-------------- Adding time stamp to user audit trail array-------------
 		user.Auditrail[orgid] = append(user.Auditrail[orgid], timestamp) //replace with actual timestamp
 		user.Auditrail[orgid] = append(user.Auditrail[orgid], docid)
 	}
 
-	bytes, err := json.Marshal(&org)
+	_, err = writeIntoBlockchain(orgid, org, stub)
 	if err != nil {
-		fmt.Println("Could not marshal personal info object", err)
+		fmt.Println("Could not save org Info", err)
 		return nil, err
 	}
 
-	err = stub.PutState(userid, bytes)
+	_, err = writeIntoBlockchain(userid, user, stub)
 	if err != nil {
-		fmt.Println("Could not save sharing info to org", err)
+		fmt.Println("Could not save user Info", err)
 		return nil, err
 	}
 
@@ -280,24 +279,6 @@ func (t *SimpleChaincode) getMydocs(stub shim.ChaincodeStubInterface, args []str
 	return idasbytes, nil
 }
 
-//getSharedDocs()
-func (t *SimpleChaincode) getSharedDocs(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	fmt.Println("Entering getSharedDocs")
-
-	if len(args) < 1 {
-		fmt.Println("Invalid number of arguments")
-		return nil, errors.New("Missing userid")
-	}
-
-	var userid = args[0]
-	bytes, err := stub.GetState(userid)
-	if err != nil {
-		fmt.Println("Could not user info", err)
-		return nil, err
-	}
-	return bytes, nil
-}
-
 func main() {
 	err := shim.Start(new(SimpleChaincode))
 
@@ -321,4 +302,23 @@ func makeTimestamp() string {
 
 	return t.Format(("2006-01-02T15:04:05.999999-07:00"))
 	//return time.Now().UnixNano() / (int64(time.Millisecond)/int64(time.Nanosecond))
+}
+
+//------------- reusable methods -------------------
+
+func (t *SimpleChaincode) writeIntoBlockchain(key string, value User, stub shim.ChaincodeStubInterface) ([]byte, error) {
+
+	bytes, err := json.Marshal(&value)
+	if err != nil {
+		fmt.Println("Could not marshal info object", err)
+		return nil, err
+	}
+
+	err = stub.PutState(userid, bytes)
+	if err != nil {
+		fmt.Println("Could not save sharing info to org", err)
+		return nil, err
+	}
+
+	return nil, nil
 }
