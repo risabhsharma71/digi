@@ -54,6 +54,23 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	}
 	return nil, nil
 }
+
+func (t *SimpleChaincode) removeDocument(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	if len(args) < 2 {
+		fmt.Println("Expecting a minimum of three arguments Argument")
+		return nil, errors.New("Expected at least one arguments for adding a user")
+	}
+
+	var userhash = args[0]
+	var dochash = args[1]
+
+	user, err = readFromBlockchain(userhash)
+	if err != nil {
+		return nil, errors.New("failed to read", err)
+	}
+
+}
+
 func (t *SimpleChaincode) revokeAccess(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	if len(args) < 3 {
 		fmt.Println("Expecting a minimum of three arguments Argument")
@@ -321,4 +338,21 @@ func (t *SimpleChaincode) writeIntoBlockchain(key string, value User, stub shim.
 	}
 
 	return nil, nil
+}
+
+func (t *SimpleChaincode) readFromBlockchain(key string) (User, error) {
+	userbytes, err := stub.GetState(key)
+	if err != nil {
+		fmt.Println("could not fetch user", err)
+		return nil, err
+	}
+
+	var user User
+	err = json.Unmarshal(userbytes, &user)
+	if err != nil {
+		fmt.Println("Unable to marshal data", err)
+		return nil, err
+	}
+
+	return user, nil
 }
