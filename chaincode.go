@@ -64,6 +64,7 @@ func (t *SimpleChaincode) removeDocument(stub shim.ChaincodeStubInterface, args 
 	var userhash = args[0]
 	var dochash = args[1]
 	var user User
+
 	user, err = readFromBlockchain(userhash)
 	if err != nil {
 		return nil, errors.New("failed to read", err)
@@ -101,29 +102,14 @@ func (t *SimpleChaincode) revokeAccess(stub shim.ChaincodeStubInterface, args []
 	var org User
 
 	//checking if the user exists
-	userbytes, err := stub.GetState(userhash)
+	user, err = readFromBlockchain(userhash)
 	if err != nil {
-		fmt.Println("could not fetch user", err)
-		return nil, err
+		return nil, errors.New("failed to read", err)
 	}
 
-	err = json.Unmarshal(userbytes, &user)
+	org, err = readFromBlockchain(orghash)
 	if err != nil {
-		fmt.Println("Unable to marshal data", err)
-		return nil, err
-	}
-
-	//checking if the user exists
-	orgbytes, orgerr := stub.GetState(orghash)
-	if orgerr != nil {
-		fmt.Println("could not fetch user", orgerr)
-		return nil, err
-	}
-
-	err = json.Unmarshal(orgbytes, &org)
-	if err != nil {
-		fmt.Println("Unable to marshal data", err)
-		return nil, err
+		return nil, errors.New("failed to read", err)
 	}
 
 	userDocsArray := org.SharedwithMe[userhash]
@@ -139,14 +125,7 @@ func (t *SimpleChaincode) revokeAccess(stub shim.ChaincodeStubInterface, args []
 	//assign that array to the user map key
 	org.SharedwithMe[userhash] = userDocsArray
 
-	bytesvalue, err := json.Marshal(&org)
-	if err != nil {
-		fmt.Println("Could not marshal personal info object", err)
-		return nil, err
-	}
-
-	//write back in blockchain
-	err = stub.PutState(userhash, bytesvalue)
+	_, err = writeIntoBlockchain(orghash, org, stub)
 	if err != nil {
 		fmt.Println("Could not save add doc to user", err)
 		return nil, err
