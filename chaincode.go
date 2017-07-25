@@ -63,11 +63,27 @@ func (t *SimpleChaincode) removeDocument(stub shim.ChaincodeStubInterface, args 
 
 	var userhash = args[0]
 	var dochash = args[1]
-
+	var user User
 	user, err = readFromBlockchain(userhash)
 	if err != nil {
 		return nil, errors.New("failed to read", err)
 	}
+
+	for i, v := range user.Owns {
+		if v == dochash {
+			user.Owns = append(user.Owns[:i], user.Owns[i+1:]...)
+			break
+		}
+	}
+
+	_, err = writeIntoBlockchain(userhash, user, stub)
+	if err != nil {
+		fmt.Println("Could not save add doc to user", err)
+		return nil, err
+	}
+
+	fmt.Println("Successfully removed the doc")
+	return nil, nil
 
 }
 
